@@ -1,0 +1,7 @@
+{
+    "CreateThumbnailFunction": {
+        "THUMBNAIL_SIZE": 128,
+        "REGION_NAME": "us-east-1",
+        "DYNAMODB_TABLE": "ImagesDynamoDbTable"
+    }
+  }

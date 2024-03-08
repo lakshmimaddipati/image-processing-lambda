@@ -1,0 +1,2 @@
+sam local generate-event s3 put --bucket bucket-name --key key-name |
+sam local invoke -e - function-name

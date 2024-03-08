@@ -1,0 +1,118 @@
+AWSTemplateFormatVersion: '2010-09-09'
+Transform: AWS::Serverless-2016-10-31
+Description: >
+  thumbnail
+
+  Sample SAM Template for thumbnail
+
+# More info about Globals: https://github.com/awslabs/serverless-application-model/blob/master/docs/globals.rst
+Globals:
+  Function:
+    Timeout: 60 #sec
+    MemorySize: 128
+    CodeUri: handler/   
+    Runtime: python3.7
+    Architectures:
+      - x86_64
+    Environment:
+      variables:
+        THUMBNAIL_SIZE: 128
+        REGION_NAME: "us-east-1"
+        DYNAMODB_TABLE: !Ref ImagesDynamoDbTable
+    Layers:
+      - "arn:aws:lambda:us-east-1:770693421928:layer:Klayers-p38-Pillow:6"
+
+Resources:
+  CreateThumbnailFunction:
+    Type: AWS::Serverless::Function # More info about Function Resource: https://github.com/awslabs/serverless-application-model/blob/master/versions/2016-10-31.md#awsserverlessfunction
+    Properties:
+      Handler: app.s3_thumbnail_generator
+      Policies:
+      - S3FullAccessPolicy:
+         BucketName: mybucket 
+      - DynamoDBCrudPolicy:
+         TableName: !Ref ImagesDynamoDbTable
+      - Version: '2012-10-17'
+        Statement:
+          - Effect: Allow
+            Action: 's3:*'
+            Resource: '*'    
+      ##once thumbnails are created we need policies to write metadata to db table  
+      Events:
+        CreateThumbnailEvent:
+          Type: S3 # More info about API Event Source: https://github.com/awslabs/serverless-application-model/blob/master/versions/2016-10-31.md#api
+          Properties:
+            Bucket: !Ref SrcBucket  #returns the value of the specified parameter or resource.
+            Events: s3:ObjectCreated:* #An object was created by any of the event types(put, post) or by a similar object creation event added in the future.
+
+  ListThumbnails:
+    Type: AWS::Serverless::Function
+    Properties:
+      Handler: app.s3_get_thumbnail_urls  
+      Policies:
+        - DynamoDBReadPolicy:
+           TableName: !Ref ImagesDynamoDbTable
+      Events:
+        ListThumbnailsEvent:
+          Type: Api
+          Properties:
+            Path: /images
+            Method: GET
+
+  GetThumbnail:
+    Type: AWS::Serverless::Function
+    Properties:
+      Handler: app.s3_get_item  
+      Policies: 
+        - DynamoDBReadPolicy: # Better, less permissive - best practice
+             TableName: !Ref ImagesDynamoDbTable 
+                
+      Events:
+        GetThumbnailThumbnailEvent:
+          Type: Api
+          Properties:
+            Path: /images/{id}
+            Method: GET
+
+  DeleteThumbnail:
+    Type: AWS::Serverless::Function
+    Properties:
+      Handler: app.s3_delete_item            
+      Policies: 
+        - DynamoDBCrudPolicy: 
+            TableName: !Ref ImagesDynamoDbTable
+    
+      Events:
+        DeleteThumbnailEvent:
+          Type: Api
+          Properties:
+            Path: /images/{id}
+            Method: DELETE 
+  
+  SourceBucket:
+    Type: AWS::S3::Bucket
+
+  ImagesDynamoDbTable:
+    Type: AWS::DynamoDB::Table
+    Properties:
+      AttributeDefinitions:
+        - AttributeName: id
+          AttributeType: S
+      KeySchema:
+        - AttributeName: id
+          KeyType: HASH
+      ProvisionedThroughput:
+        ReadCapacityUnits: 5
+        WriteCapacityUnits: 5
+      TableName: "images-url-tables"
+
+# Outputs: 
+#   ThumbnailApi:
+#     Description: "API Gateway endpoint URL for Prod stage for for thumbnail function"
+#     Value: !Sub "https://${ServerlessRestApi}.execute-api.${AWS::Region}.amazonaws.com/Prod/images/"
+#   CreateThumbnailFunction:
+#     Description: "CreateThumbnailFunction Lambda Function ARN"
+#     Value: !GetAtt CreateThumbnailFunction.Arn
+  # HelloWorldFunctionIamRole:
+  #   Description: "Implicit IAM Role created for Hello World function"
+  #   Value: !GetAtt HelloWorldFunctionRole.Arn
