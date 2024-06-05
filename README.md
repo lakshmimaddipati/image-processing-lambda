@@ -10,9 +10,6 @@ This project contains source code and supporting files for a serverless applicat
 The application uses several AWS resources, including Lambda functions and an API Gateway API. These resources are defined in the `template.yaml` file in this project. You can update the template to add AWS resources through the same deployment process that updates your application code.
 
 
-## Readup on the background from below link 
-https://docs.aws.amazon.com/lambda/latest/dg/with-s3-tutorial.html
-
 ## Architecture
 ![alt text](https://res.cloudinary.com/practicaldev/image/fetch/s--ohCMao3_--/c_limit%2Cf_auto%2Cfl_progressive%2Cq_auto%2Cw_880/https://github.com/yinlinchen/thumbnail_creator/raw/master/images/overview.png)
 
